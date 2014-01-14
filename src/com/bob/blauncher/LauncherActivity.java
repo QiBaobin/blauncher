@@ -58,7 +58,17 @@ public class LauncherActivity extends FragmentActivity implements ViewPager.OnPa
             index = savedInstanceState.getInt(KEY_CURRENT_PAGE, DEFAULT_CURRENT_PAGE);
         if (index < 0 || index >= mFragSources.length - 1)
             index = (mFragSources.length - 1) / 2;
-        mContainer.setCurrentItem(index, false);
+        final int i = index;
+        mContainer.post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try{
+                        mContainer.setCurrentItem(i, false);
+                    }catch(Exception e){}
+                }
+            });
     }
 
     @Override
