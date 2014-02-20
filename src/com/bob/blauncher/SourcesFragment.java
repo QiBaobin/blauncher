@@ -1,5 +1,14 @@
 package com.bob.blauncher;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -27,34 +36,36 @@ import com.bob.blauncher.query.Item;
 import com.bob.blauncher.query.Source;
 import com.bob.blauncher.query.Utils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
 /**
  * Created by Bob on 6/21/13.
  */
-public class SourcesFragment extends ListFragment implements TextWatcher, AdapterView.OnItemLongClickListener {
+public class SourcesFragment
+    extends ListFragment
+    implements TextWatcher, AdapterView.OnItemLongClickListener
+{
     private static final String QUERY_DELIMETER = "/";
+
     private static final String KEY_QUERY = "frag_current_query";
+
     private static final String KEY_SOURCES = "frag_default_sources";
+
     private final List<Source> mSources = new ArrayList<Source>();
+
     private Utils mUtils;
+
     private String mSelectedSources;
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
+    public void onActivityCreated( final Bundle savedInstanceState )
+    {
         super.onActivityCreated(savedInstanceState);
         mUtils = new Utils(getActivity());
 
-        if (savedInstanceState != null) {
+        if (savedInstanceState != null)
+        {
             String defaultSources = savedInstanceState.getString(KEY_SOURCES);
-            if (defaultSources != null) {
+            if (defaultSources != null)
+            {
                 setSelectedSources(defaultSources);
             }
             getQueryTextView().setText(savedInstanceState.getString(KEY_QUERY));
@@ -63,12 +74,14 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
     }
 
     @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
-        if (mSources.isEmpty())
-            initSources();
-        for (Source s : mSources) {
-            if (!(s instanceof AllApplicationsSource)) {
+        if (mSources.isEmpty()) initSources();
+        for (Source s : mSources)
+        {
+            if (!(s instanceof AllApplicationsSource))
+            {
                 s.reload();
             }
         }
@@ -76,29 +89,33 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView( final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState )
+    {
         return inflater.inflate(R.layout.fragment_sources, container, false);
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState( final Bundle outState )
+    {
         outState.putString(KEY_QUERY, getQueryTextView().getText().toString());
         outState.putString(KEY_SOURCES, getSelectedSources());
         super.onSaveInstanceState(outState);
     }
 
-    public void invalidate() {
+    public void invalidate()
+    {
         if (getView() == null) return;
         buildQuery();
     }
 
-    public void reset() {
+    public void reset()
+    {
         EditText queryText = getQueryTextView();
-        if (queryText != null)
-            queryText.setText(null);
+        if (queryText != null) queryText.setText(null);
     }
 
-    public void startSearch() {
+    public void startSearch()
+    {
         View queryText = getQueryTextView();
         if (queryText == null) return;
 
@@ -107,165 +124,197 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
         im.showSoftInput(queryText, InputMethodManager.SHOW_FORCED);
     }
 
-    private void bindEvents() {
+    private void bindEvents()
+    {
         Collection<Source> sources = mUtils.getAllSources();
         final CharSequence[] names = new String[sources.size()];
         final Map<String, Source> mapping = new HashMap<String, Source>();
         int i = 0;
-        for (Source s : sources) {
+        for (Source s : sources)
+        {
             names[i++] = s.getName();
             mapping.put(s.getName(), s);
         }
         Arrays.sort(names);
         String selectedSource = getSelectedSources();
         final boolean[] checkedSources = new boolean[sources.size()];
-        for (i = 0; i < checkedSources.length; i++) {
+        for (i = 0; i < checkedSources.length; i++)
+        {
             checkedSources[i] = selectedSource.indexOf(mapping.get(names[i]).getKey()) >= 0;
         }
         final TextView sourcesView = (TextView) getView().findViewById(R.id.sources);
         sourcesView.setText(selectedSource);
-        sourcesView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                final StringBuilder sb = new StringBuilder(getSelectedSources());
-                new AlertDialog.Builder(getActivity()).setTitle("Sources").setCancelable(true).setMultiChoiceItems(names, checkedSources, new DialogInterface.OnMultiChoiceClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                        char key = mapping.get(names[i]).getKey();
-                        int index = sb.indexOf(key + "");
-                        if (b) {
-                            if (index == -1)
-                                sb.append(key);
-                        } else {
-                            if (index >= 0)
-                                sb.deleteCharAt(index);
-                        }
-                    }
-                }).setPositiveButton("Done", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        String selectedSource = sb.toString();
-                        for (i = 0; i < checkedSources.length; i++) {
-                            checkedSources[i] = selectedSource.indexOf(mapping.get(names[i]).getKey()) >= 0;
-                        }
-                        setSelectedSources(selectedSource);
-                        sourcesView.setText(selectedSource);
-                        buildQuery();
-                        dialogInterface.dismiss();
-                    }
-                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                    }
-                }).show();
+        sourcesView.setOnClickListener(new View.OnClickListener()
+            {
+                @Override
+                public void onClick( final View view )
+                {
+                    final StringBuilder sb = new StringBuilder(getSelectedSources());
+                    new AlertDialog.Builder(getActivity()).setTitle("Sources").setCancelable(true).setMultiChoiceItems(names, checkedSources, new DialogInterface.OnMultiChoiceClickListener()
+                        {
+                            @Override
+                            public void onClick( final DialogInterface dialogInterface, final int i, final boolean b )
+                            {
+                                char key = mapping.get(names[i]).getKey();
+                                int index = sb.indexOf(key + "");
+                                if (b)
+                                {
+                                    if (index == -1) sb.append(key);
+                                }
+                                else
+                                {
+                                    if (index >= 0) sb.deleteCharAt(index);
+                                }
+                            }
+                        }).setPositiveButton("Done", new DialogInterface.OnClickListener()
+                        {
+                            @Override
+                            public void onClick( final DialogInterface dialogInterface, int i )
+                            {
+                                String selectedSource = sb.toString();
+                                for (i = 0; i < checkedSources.length; i++)
+                                {
+                                    checkedSources[i] = selectedSource.indexOf(mapping.get(names[i]).getKey()) >= 0;
+                                }
+                                setSelectedSources(selectedSource);
+                                sourcesView.setText(selectedSource);
+                                buildQuery();
+                            }
+                        }).setNegativeButton("Cancel", null).show();
 
-            }
-        });
+                }
+            });
 
         final TextView queryText = getQueryTextView();
         queryText.addTextChangedListener(this);
-        queryText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (keyEvent.getAction() == KeyEvent.ACTION_DOWN && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-                    int position = 0;
-                    String[] input = textView.getText().toString().split(QUERY_DELIMETER);
-                    if (input.length > 2) {
-                        try {
-                            position = Integer.parseInt(input[2]) - 1;
-                        } catch (Exception e) {
+        queryText.setOnEditorActionListener(new TextView.OnEditorActionListener()
+            {
+                @Override
+                public boolean onEditorAction( final TextView textView, final int i, final KeyEvent keyEvent )
+                {
+                    if (keyEvent.getAction() == KeyEvent.ACTION_DOWN && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)
+                    {
+                        int position = 0;
+                        String[] input = textView.getText().toString().split(QUERY_DELIMETER);
+                        if (input.length > 2)
+                        {
+                            try
+                            {
+                                position = Integer.parseInt(input[2]) - 1;
+                            }
+                            catch (Exception e)
+                            {
+                            }
                         }
-                    }
 
-                    ListAdapter adapter = getListAdapter();
-                    if (position >= 0 && position < adapter.getCount()) {
-                        Item item = (Item) adapter.getItem(position);
-                        if (item != null && item.source != null && item.source.getActions().size() > 0) {
-                            item.source.getActions().get(0).runWith(item);
+                        ListAdapter adapter = getListAdapter();
+                        if (position >= 0 && position < adapter.getCount())
+                        {
+                            Item item = (Item) adapter.getItem(position);
+                            if (item != null && item.source != null && item.source.getActions().size() > 0)
+                            {
+                                item.source.getActions().get(0).runWith(item);
+                            }
                         }
+                        return true;
                     }
-                    return true;
+                    return false;
                 }
-                return false;
-            }
-        });
+            });
 
-        getView().findViewById(R.id.clear).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                queryText.setText(null);
-            }
-        });
+        getView().findViewById(R.id.clear).setOnClickListener(new View.OnClickListener()
+            {
+                @Override
+                public void onClick( final View view )
+                {
+                    queryText.setText(null);
+                }
+            });
 
         getListView().setOnItemLongClickListener(this);
     }
 
-    private void initSources() {
+    private void initSources()
+    {
         mSources.clear();
         for (char c : getSelectedSources().toCharArray())
             addSource(c);
     }
 
-    private void addSource(char key) {
+    private void addSource( final char key )
+    {
         Source s = mUtils.getSource(key);
-        if (s != null)
-            mSources.add(s);
+        if (s != null) mSources.add(s);
     }
 
-    private void bindItems(String query) {
+    private void bindItems( final String query )
+    {
         Pattern pattern;
-        if (query != null && query.trim().length() > 0) {
-            try {
+        if (query != null && query.trim().length() > 0)
+        {
+            try
+            {
                 pattern = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
-            } catch (PatternSyntaxException e) {
+            }
+            catch (PatternSyntaxException e)
+            {
                 pattern = Pattern.compile(query, Pattern.LITERAL);
             }
-        } else {
+        }
+        else
+        {
             pattern = null;
         }
         List<Item> items = new ArrayList<Item>();
-        for (Source s : mSources) {
+        for (Source s : mSources)
+        {
             items.addAll(s.getItems(pattern));
         }
         setListAdapter(new ItemsAdapter(getActivity(), items));
     }
 
     @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
+    public void onListItemClick( final ListView l, final View v, final int position, final long id )
+    {
         Item i = (Item) l.getItemAtPosition(position);
-        if (i != null) {
+        if (i != null)
+        {
             Source s = i.source;
-            if (s != null && s.getActions().size() > 0) {
+            if (s != null && s.getActions().size() > 0)
+            {
                 s.getActions().get(0).runWith(i);
             }
         }
     }
 
     @Override
-    public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+    public void beforeTextChanged( final CharSequence charSequence, final int i, final int i2, final int i3 )
+    {
 
     }
 
     @Override
-    public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+    public void onTextChanged( final CharSequence charSequence, final int i, final int i2, final int i3 )
+    {
 
     }
 
     @Override
-    public void afterTextChanged(Editable editable) {
+    public void afterTextChanged( final Editable editable )
+    {
         buildQuery();
     }
 
     @Override
-    public void onViewStateRestored(Bundle savedInstanceState) {
+    public void onViewStateRestored( final Bundle savedInstanceState )
+    {
         super.onViewStateRestored(savedInstanceState);
 
-        if (getQueryTextView().getText().length() > 0)
-            buildQuery();
+        if (getQueryTextView().getText().length() > 0) buildQuery();
     }
 
-    private void buildQuery() {
+    private void buildQuery()
+    {
         EditText view = getQueryTextView();
         if (view == null) return;
 
@@ -274,40 +323,46 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
         String query = input[0];
         bindItems(query);
 
-        if (input.length > 1) {
+        if (input.length > 1)
+        {
             String positionAndAction = input[1];
             int i;
-            for (i = 0; i < positionAndAction.length(); i++) {
+            for (i = 0; i < positionAndAction.length(); i++)
+            {
                 char c = positionAndAction.charAt(i);
-                if (c < '0' || c > '9')
-                    break;
+                if (c < '0' || c > '9') break;
             }
 
             boolean hasPosition = i > 0;
             boolean hasAction = i < positionAndAction.length();
             int position = 0;
-            if (hasPosition) {
+            if (hasPosition)
+            {
                 position = Integer.parseInt(positionAndAction.substring(0, i)) - 1;
             }
             getListView().setSelection(position);
 
-            if (hasAction) {
+            if (hasAction)
+            {
                 String actions = positionAndAction.substring(i);
-                if (mSources.size() > 0) {
+                if (mSources.size() > 0)
+                {
                     boolean hasExecutedQueryAction = false;
-                    if (!hasPosition)
-                        for (Source s : mSources) {
-                            if (runQueryAction(query, actions, s)) {
-                                hasExecutedQueryAction = true;
-                                break;
-                            }
+                    if (!hasPosition) for (Source s : mSources)
+                    {
+                        if (runQueryAction(query, actions, s))
+                        {
+                            hasExecutedQueryAction = true;
+                            break;
                         }
+                    }
 
-                    if (!hasExecutedQueryAction) {
+                    if (!hasExecutedQueryAction)
+                    {
                         runAtPosition(actions, position);
                     }
                 }
-                //remove actions
+                // remove actions
                 String text = originInput.substring(0, originInput.length() - actions.length());
                 view.setText(text);
                 view.setSelection(text.length());
@@ -315,34 +370,45 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
         }
     }
 
-    private String getSelectedSources() {
+    private String getSelectedSources()
+    {
         return mSelectedSources;
     }
 
-    public void setSelectedSources(String sources) {
+    public void setSelectedSources( final String sources )
+    {
         mSelectedSources = sources;
-        if (isResumed()) {
+        if (isResumed())
+        {
             initSources();
+        }
+        else
+        {
+            mSources.clear();
         }
     }
 
-    private EditText getQueryTextView() {
-        if (getView() == null)
-            return null;
+    private EditText getQueryTextView()
+    {
+        if (getView() == null) return null;
         return (EditText) getView().findViewById(R.id.query);
     }
 
-    private void runAtPosition(String action, int position) {
-        if (action == null && action.trim().length() == 0)
-            return;
+    private void runAtPosition( final String action, final int position )
+    {
+        if (action == null || action.trim().length() == 0) return;
 
         ListAdapter adapter = getListAdapter();
-        if (position >= 0 && position < adapter.getCount()) {
+        if (position >= 0 && position < adapter.getCount())
+        {
             Item selected = (Item) adapter.getItem(position);
-            if (selected != null) {
+            if (selected != null)
+            {
                 for (char k : action.toCharArray())
-                    for (Action a : selected.source.getActions()) {
-                        if (k == a.getKey()) {
+                    for (Action a : selected.source.getActions())
+                    {
+                        if (k == a.getKey())
+                        {
                             a.runWith(selected);
                             return;
                         }
@@ -351,10 +417,14 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
         }
     }
 
-    private boolean runQueryAction(String query, String action, Source s) {
-        for (char k : action.toCharArray()) {
-            for (Action a : s.getOnQueryActions()) {
-                if (k == a.getKey()) {
+    private boolean runQueryAction( final String query, final String action, final Source s )
+    {
+        for (char k : action.toCharArray())
+        {
+            for (Action a : s.getOnQueryActions())
+            {
+                if (k == a.getKey())
+                {
                     a.runWith(s.buildQueryItem(query));
                 }
             }
@@ -363,23 +433,27 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
     }
 
     @Override
-    public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+    public boolean onItemLongClick( final AdapterView<?> adapterView, final View view, final int i, final long l )
+    {
         final Item item = (Item) adapterView.getItemAtPosition(i);
         final List<Action> actions = item.source.getActions();
 
         CharSequence[] names = new CharSequence[actions.size()];
         int index = 0;
-        for (Action a : actions) {
+        for (Action a : actions)
+        {
             names[index++] = String.format("%s (%s)", a.getName(), a.getKey());
         }
-        new AlertDialog.Builder(getActivity()).setTitle("Actions").setItems(names, new DialogInterface.OnClickListener() {
+        new AlertDialog.Builder(getActivity()).setTitle("Actions").setItems(names, new DialogInterface.OnClickListener()
+            {
 
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                actions.get(i).runWith(item);
-                buildQuery();
-            }
-        }).show();
+                @Override
+                public void onClick( final DialogInterface dialogInterface, final int i )
+                {
+                    actions.get(i).runWith(item);
+                    buildQuery();
+                }
+            }).show();
 
         return true;
     }
@@ -387,18 +461,20 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
     /**
      * Adapter to show the list of all installed applications.
      */
-    private class ItemsAdapter extends ArrayAdapter<Item> {
-        List<Item> mItems;
-
-        public ItemsAdapter(Context context, List<Item> apps) {
+    private class ItemsAdapter
+        extends ArrayAdapter<Item>
+    {
+        public ItemsAdapter( final Context context, final List<Item> apps )
+        {
             super(context, 0, apps);
-            mItems = apps;
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView( final int position, final View convertView, final ViewGroup parent )
+        {
             View v = convertView;
-            if (convertView == null) {
+            if (convertView == null)
+            {
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_launchable, parent, false);
             }
 
@@ -411,7 +487,8 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
             Source s = i.source;
             StringBuffer sb = new StringBuffer();
             sb.append(position + 1);
-            if (s.getActions().size() > 0) {
+            if (s.getActions().size() > 0)
+            {
                 int index;
                 for (index = 0; index < s.getActions().size() - 1; index++)
                     sb.append(s.getActions().get(index).getKey()).append(", ");
@@ -425,4 +502,3 @@ public class SourcesFragment extends ListFragment implements TextWatcher, Adapte
     }
 
 }
-
