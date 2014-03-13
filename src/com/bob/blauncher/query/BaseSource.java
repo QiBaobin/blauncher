@@ -1,9 +1,11 @@
 package com.bob.blauncher.query;
 
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,6 +49,9 @@ public abstract class BaseSource implements Source {
             queryActions = new ArrayList<Action>();
             queryActions.add(new CopyAction());
             queryActions.add(new SendAction());
+            queryActions.add(new InternetAction('G', "Google", "http://www.google.com/search?q=%s"));
+            queryActions.add(new InternetAction('W', "Wikipedia", "http://zh.wikipedia.org/w/index.php?title=Special:Search&search=%s"));
+            queryActions.add(new InternetAction('B', "Baidu Baike", "http://baike.baidu.com/search/word?word=%s"));
             if (Utils.isIntentAvailable(context, new Intent(ACTION_COLORDICT_SEARCH)))
                 queryActions.add(new ColorDictAction());
         }
@@ -94,9 +99,10 @@ public abstract class BaseSource implements Source {
             return "Copy to clipboard";
         }
 
+        @SuppressLint("NewApi")
         @Override
         public void runWith(Item item) {
-            ((ClipboardManager) context.getSystemService(context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("blauncher", item.title));
+            ((ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("blauncher", item.title));
         }
     }
 
@@ -141,4 +147,30 @@ public abstract class BaseSource implements Source {
         }
     }
 
+    class InternetAction implements Action {
+        private final char key;
+        private final String name;
+        private final String template;
+
+        public InternetAction(char key, String name, String template) {
+            this.key = key;
+            this.name = name;
+            this.template = template;
+        }
+
+        @Override
+        public char getKey() {
+            return key;
+        }
+
+        @Override
+        public CharSequence getName() {
+            return String.format("Search %s", name);
+        }
+
+        @Override
+        public void runWith(Item item) {
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(template, item.title))));
+        }
+    }
 }
