@@ -1,15 +1,16 @@
 package com.bob.blauncher.query;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.provider.Settings;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.bob.blauncher.Favorite;
 
 /**
  * Created by Bob on 6/10/13.
@@ -18,7 +19,7 @@ public abstract class ApplicationsSource extends BaseSource {
     private static final String SCHEME = "package";
     private List<Action> actions;
 
-    public ApplicationsSource(Context context) {
+    public ApplicationsSource(final Context context) {
         super(context);
     }
 
@@ -29,14 +30,16 @@ public abstract class ApplicationsSource extends BaseSource {
             actions.add(new OpenAction());
             actions.add(new UninstallAction());
             actions.add(new InfoAction());
+            actions.add(new FavoriteAction());
             actions.addAll(super.getActions());
         }
         return actions;
     }
 
+    @Override
     protected abstract List<Item> buildItems();
 
-    protected Item buildItem(ResolveInfo info, PackageManager manager) {
+    protected Item buildItem(final ResolveInfo info, final PackageManager manager) {
         Item item = new Item();
         item.source = this;
         item.title = info.loadLabel(manager);
@@ -45,11 +48,11 @@ public abstract class ApplicationsSource extends BaseSource {
         return item;
     }
 
-    protected String getPackageName(Item item) {
+    protected String getPackageName(final Item item) {
         return item.data.split("/")[0];
     }
 
-    protected String getActivityName(Item item) {
+    protected String getActivityName(final Item item) {
         return item.data
                 .split("/")[1];
     }
@@ -67,7 +70,7 @@ public abstract class ApplicationsSource extends BaseSource {
         }
 
         @Override
-        public void runWith(Item item) {
+        public void runWith(final Item item) {
             Intent intent = new Intent();
             intent.setAction(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -89,7 +92,7 @@ public abstract class ApplicationsSource extends BaseSource {
         }
 
         @Override
-        public void runWith(Item item) {
+        public void runWith(final Item item) {
             Intent intent = new Intent(Intent.ACTION_DELETE);
             intent.setData(Uri.fromParts(SCHEME, getPackageName(item), null));
             context.startActivity(intent);
@@ -97,11 +100,6 @@ public abstract class ApplicationsSource extends BaseSource {
     }
 
     public class InfoAction implements Action {
-        private static final String APP_PKG_NAME_21 = "com.android.settings.ApplicationPkgName";
-        private static final String APP_PKG_NAME_22 = "pkg";
-        private static final String APP_DETAILS_PACKAGE_NAME = "com.android.settings";
-        private static final String APP_DETAILS_CLASS_NAME = "com.android.settings.InstalledAppDetails";
-
         @Override
         public char getKey() {
             return 'i';
@@ -113,22 +111,30 @@ public abstract class ApplicationsSource extends BaseSource {
         }
 
         @Override
-        public void runWith(Item item) {
+        public void runWith(final Item item) {
             String pkgName = getPackageName(item);
             Intent intent = new Intent();
-            final int apiLevel = Build.VERSION.SDK_INT;
-            if (apiLevel >= 9) { // above 2.3
-                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                intent.setData(Uri.fromParts(SCHEME, pkgName, null));
-            } else { // below 2.3
-                final String appPkgName = (apiLevel == 8 ? APP_PKG_NAME_22
-                        : APP_PKG_NAME_21);
-                intent.setAction(Intent.ACTION_VIEW);
-                intent.setClassName(APP_DETAILS_PACKAGE_NAME,
-                        APP_DETAILS_CLASS_NAME);
-                intent.putExtra(appPkgName, pkgName);
-            }
+            intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.fromParts(SCHEME, pkgName, null));
             context.startActivity(intent);
+        }
+    }
+
+    public class FavoriteAction implements Action {
+
+        @Override
+        public char getKey() {
+            return 'f';
+        }
+
+        @Override
+        public CharSequence getName() {
+            return "Add to favorite";
+        }
+
+        @Override
+        public void runWith(final Item item) {
+            Favorite.getInstance().add(getPackageName(item), getActivityName(item));
         }
     }
 }
