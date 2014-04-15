@@ -21,7 +21,7 @@ import android.widget.ListView;
 
 /**
  * @author Bob Qi
- * 
+ *
  */
 public class QuickBarFragment
     extends ListFragment
@@ -123,11 +123,13 @@ public class QuickBarFragment
     @Override
     public void onListItemClick( final ListView l, final View v, final int position, final long id )
     {
-        ResolveInfo info = (ResolveInfo) getListAdapter().getItem(position);
-        if (info != null)
+        Entry entry = (Entry) getListAdapter().getItem(position);
+        if (entry != null)
         {
             Intent intent = new Intent();
-            intent.setClassName(info.activityInfo.packageName, info.activityInfo.name);
+            intent.setAction(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setClassName(entry.packageName, entry.activityName);
             startActivity(intent);
         }
     }
