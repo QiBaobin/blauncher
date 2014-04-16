@@ -2,6 +2,8 @@ blauncher
 =========
 BLauncher is a simple android launcher, which supports query items from different sources such as application, contacts, settngs etc. You can also execute an action on item at given position.
 
+[APK](/com.bob.blauncher-1.apk)
+
 ![Screenshot](/screenshots/sample1.png "sample")
 
 sytax: regex[/[position]action]
